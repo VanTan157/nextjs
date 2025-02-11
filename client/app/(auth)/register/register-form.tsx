@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerForm } from "@/app/validate";
+import { LoginType, registerForm } from "@/app/validate";
 import { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import ReqApi from "@/lib/reqApi";
-import { HttpError } from "@/lib/http";
+import { EntityError, HttpError } from "@/lib/http";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
@@ -50,11 +50,9 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof registerForm>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    console.log(values);
     try {
       // Call API
       const res = await ReqApi.register(values);
-      console.log(res);
       toast({
         title: "Success",
         description: res.message,
@@ -67,15 +65,15 @@ export function RegisterForm() {
           description: (error.payload as { message: string }).message,
           variant: "destructive",
         });
-        const errors = (
-          error.payload as { errors: { field: string; message: string }[] }
-        ).errors;
-        errors.forEach((error) => {
-          form.setError(error.field as keyof z.infer<typeof registerForm>, {
-            type: "manual",
-            message: error.message,
+        if (error instanceof EntityError) {
+          const errors = error.payload.errors;
+          errors.forEach((error) => {
+            form.setError(error.field as keyof LoginType, {
+              type: "server",
+              message: error.message,
+            });
           });
-        });
+        }
       }
     }
   }

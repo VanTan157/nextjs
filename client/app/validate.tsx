@@ -41,3 +41,28 @@ export const registerForm = z
   });
 
 export type RegisterType = z.infer<typeof registerForm>;
+
+export const getMe = z.object({
+  data: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+  }),
+  message: z.string(),
+});
+
+export type MeType = z.infer<typeof getMe>;
+
+export const Account = z.object({
+  name: z.string(),
+  id: z.string(),
+  emai: z.string(),
+});
+
+export type AccountType = z.infer<typeof Account>;
+
+export const Message = z.object({
+  message: z.string(),
+});
+
+export type MessageType = z.infer<typeof Message>;

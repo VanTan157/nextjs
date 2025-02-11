@@ -15,14 +15,16 @@ import { loginForm, LoginType } from "@/app/validate";
 import { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import ReqApi from "@/lib/reqApi";
-import { HttpError } from "@/lib/http";
+import { ClientSessionToken, EntityError, HttpError } from "@/lib/http";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const [loading, setLoading] = useState<boolean>(false);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -40,15 +42,17 @@ export function LoginForm() {
   async function onSubmit(values: LoginType) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    console.log(process.env.NEXT_PUBLIC_BE_URL);
+    if (loading) return;
+    setLoading(true);
     try {
       const res = await ReqApi.login(values);
-      console.log(res);
       toast({
         title: "Success",
         description: res.message,
       });
-      await ReqApi.setToken(res.data);
+      ClientSessionToken.value = res.data.token;
+      const res1 = await ReqApi.setToken(res.data);
+      console.log(res1);
       router.push("/me");
     } catch (error) {
       if (error instanceof HttpError) {
@@ -57,19 +61,18 @@ export function LoginForm() {
           description: (error.payload as { message: string }).message,
           variant: "destructive",
         });
-        const errors = (
-          error.payload as { errors: { field: string; message: string }[] }
-        ).errors;
-        errors.forEach((error) => {
-          form.setError(error.field as keyof LoginType, {
-            type: "server",
-            message: error.message,
+        if (error instanceof EntityError) {
+          const errors = error.payload.errors;
+          errors.forEach((error) => {
+            form.setError(error.field as keyof LoginType, {
+              type: "server",
+              message: error.message,
+            });
           });
-        });
-
-        console.log(errors);
+        }
       }
     }
+    setLoading(false);
   }
   return (
     <Form {...form}>
@@ -128,9 +131,11 @@ export function LoginForm() {
             )}
           />
           <Button
+            disabled={loading}
             className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             type="submit"
           >
+            {loading && <Loader2 className="animate-spin" />}
             Submit
           </Button>
         </form>

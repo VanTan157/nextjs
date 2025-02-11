@@ -3,15 +3,15 @@ import type { NextRequest } from "next/server";
 
 // This function can be marked `async` if using `await` inside
 
-const publicPage = ["/", "/login", "/register"];
+const publicPage = ["/login", "/register"];
 const privatePage = ["/me"];
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  console.log(pathname);
   const baseUrl = request.nextUrl.origin;
   const cookie = request.cookies.get("token");
-  console.log(cookie?.value);
+
+  console.log("Middleware running:", pathname, "Token:", cookie?.value);
   if (publicPage.includes(pathname) && cookie?.value) {
     return NextResponse.redirect(`${baseUrl}/me`);
   }
@@ -23,5 +23,5 @@ export function middleware(request: NextRequest) {
 
 // See "Matching Paths" below to learn more
 export const config = {
-  matcher: ["/login", "/register", "/", "/me"],
+  matcher: ["/login", "/register", "/me"],
 };
